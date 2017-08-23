@@ -1,0 +1,28 @@
+PIDs for county assessor:
+05-26-301-100
+05-26-350-040
+05-26-351-010
+
+Resulting URLS:
+https://beacon.schneidercorp.com/Application.aspx?AppID=165&LayerID=2145&PageTypeID=4&PageID=1108&Q=1532345834&KeyValue=0526301100
+https://beacon.schneidercorp.com/Application.aspx?AppID=165&LayerID=2145&PageTypeID=4&PageID=1108&Q=172845890&KeyValue=0526350040
+https://beacon.schneidercorp.com/Application.aspx?AppID=165&LayerID=2145&PageTypeID=4&PageID=1108&Q=629978287&KeyValue=0526351010
+
+This part is the same every time:
+https://beacon.schneidercorp.com/Application.aspx?AppID=165&LayerID=2145&PageTypeID=4&PageID=1108&
+
+What?
+Q=629978287
+Q=172845890
+Q=1532345834
+
+PID:
+KeyValue=0526351010
+
+# try without Q= part
+https://beacon.schneidercorp.com/Application.aspx?AppID=165&LayerID=2145&PageTypeID=4&PageID=1108&KeyValue=0526351010
+
+# nice, works without the Q part
+
+# source code of resulting page:
+(doesn't have school in it, doh)
