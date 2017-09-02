@@ -83,7 +83,7 @@ class GetData():
         '''
         take in categorical column and convert it to flagged dummy columns
         '''
-        boink = pd.get_dummies(self.raw_data.loc[:,column])
+        boink = pd.get_dummies(self.raw_data.loc[:,column], dummy_na=True)
         keys = boink.keys()
         # make key into a string to handle numberical categories (int)
         new_keys = [col_text + str(key).lower() for key in keys]
@@ -160,20 +160,6 @@ class GetData():
         #############################################################
         self.dummify("Overall Cond", "oc_")
 
-        # temp = self.raw_data["Overall Cond"]
-        #
-        # # try dummy columns instead
-        # # self.data = pd.concat((self.data, temp), axis=1)
-        # # #print temp.unique()
-        # # # [5 6 7 2 8 4 9 3 1]
-        # oc_dum = pd.get_dummies(temp)
-        # key_list = temp.unique()
-        # new_key_list = ["oc_" + str(key) for key in key_list]
-        # oc_dum.columns = [new_key_list]
-        # # print oc_dum.head()
-        # self.data = pd.concat((self.data, oc_dum), axis=1)
-
-
         # #############################################################
         # # pool stuff flag                                   #########
         # #############################################################
@@ -181,13 +167,17 @@ class GetData():
         # has_pool = np.array(self.data.loc[:,"Pool Area"] > 0)
         # has_pool_df = pd.DataFrame(has_pool, columns=["has_pool"])
         # self.data = pd.concat((self.data, has_pool_df), axis=1)
-        #
+
         #############################################################
         # Stuff to use for inflation adjustments            #########
         #############################################################
 
+        #############################################################
+        # run: 007 years since sold                         #########
+        #############################################################
+
         # figure out how long since sale (in years)
-        # self.data.loc[:,"yrs_since_sold"] = 2010 - self.raw_data.loc[:,"Yr Sold"]
+        self.data.loc[:,"yrs_since_sold"] = 2010 - self.raw_data.loc[:,"Yr Sold"]
 
         # do the same for raw_data since we'll prob use that as the basis
         # for calculating inflation adjustment as Mo Sold and Months since sale
