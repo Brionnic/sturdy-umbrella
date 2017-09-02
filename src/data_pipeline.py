@@ -63,14 +63,29 @@ class GetData():
 
         print self.X.info()
 
+
+        print "keys for data_frame:", self.X.keys()
+
+        # scaling on Boolean values appears to be contributing to linear regression
+        # explosions?
         scaler = StandardScaler()
-        self.X = scaler.fit_transform(self.X)
+
+        # self.X = scaler.fit_transform(self.X)
+
+        # only scale continuous type variables
+        X_cont = self.X.select_dtypes(include=['float64', "int64"])
+        X_cont_scaled = pd.DataFrame(scaler.fit_transform(X_cont), columns=X_cont.keys())
+
+        X_discrete = self.X.select_dtypes(include=["uint8"])
+
+        self.X = pd.concat((X_cont_scaled, X_discrete), axis=1)
 
         return self
 
     def transform(self):
         # transform to log prices
         # self.y = np.log(y)
+
         return self.X, self.y
 
     def fit_transform(self):

@@ -4,6 +4,7 @@ from model import AmesModel
 from data_pipeline import GetData
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 # model functionality and validation
 from sklearn.metrics import mean_squared_error
@@ -46,6 +47,11 @@ def main():
 
         error = np.sqrt(mean_squared_error(y_preds, y_test))
 
+        # if the error is big then it blew up in the predictions
+        # for some reason
+        if error > 1:
+            plot_residuals(y_preds, y_test, X_test)
+
         print "RSMLE: {:2.4f}".format(error)
         RMSEs.append(error)
 
@@ -53,28 +59,64 @@ def main():
     mean = sum(RMSEs) / (len(RMSEs) * 1.0)
     print "Median RMSLE: {:2.4f} Mean RMSLE: {:2.4f}".format(boink, mean)
 
-    with open("../data/rmsle_log.txt", "r") as in_file:
-        read_file = in_file.read()
-
-    parent_list = simplejson.loads(read_file)
-    # print "parent_list", parent_list
-    parent_list.append(RMSEs)
-    with open("../data/rmsle_log.txt", "w") as out_file:
-        out_file.write(simplejson.dumps(parent_list))
+    # with open("../data/rmsle_log.txt", "r") as in_file:
+    #     read_file = in_file.read()
+    #
+    # parent_list = simplejson.loads(read_file)
+    # # print "parent_list", parent_list
+    # parent_list.append(RMSEs)
+    # with open("../data/rmsle_log.txt", "w") as out_file:
+    #     out_file.write(simplejson.dumps(parent_list))
 
     #######################################
     ### Run Eval, do about 1 in 10 runs ###
     #######################################
 
-    # eval_preds = model.transform(X_eval)
-    # eval_error = np.sqrt(mean_squared_error(eval_preds, y_eval))
+    eval_preds = model.transform(X_eval)
+    eval_error = np.sqrt(mean_squared_error(eval_preds, y_eval))
+    print
+    print "testing Eval Set: RMSLE: {:2.4f}".format(eval_error)
+
+    print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
+
+
+def plot_residuals(y_preds, y_actuals, X):
+    '''
+    Try to troubleshoot why linear regression is exploding
+    '''
+
+    # perfect predictioon would be 0
+    residuals = y_preds - y_actuals
+
+    fig, ax = plt.subplots(figsize=(12,8))
+    ax.scatter(y_actuals, y_preds, alpha=0.4, s=100, color="blue")
+    ax.set_title("Difference in Predicted Price vs Actual Price (log)")
+    ax.set_xlabel("Actual Price")
+    ax.set_ylabel("Error in Predicted Price")
+    plt.show()
+
+    print "len residuals:", len(residuals)
+    _max = residuals.max()
+    print "max:", _max
+    _max_pos = list(residuals).index(_max)
+    print "argmax:", _max_pos
+
+    keys = [u'Bedroom AbvGr', u'TotRms AbvGrd', u'Garage Cars', u'Overall Qual',
+       u'Lot Area', u'Lot Frontage', u'Pool Area', u'Fireplaces', u'home_sf',
+       u'bsmt_qual_ex', u'bsmt_qual_fa', u'bsmt_qual_gd', u'bsmt_qual_po',
+       u'bsmt_qual_ta', u'bsmt_qual_nan', u'total_baths', u'bed_to_room_ratio',
+       u'yrs_since_update', u'oc_1.0', u'oc_2.0', u'oc_3.0', u'oc_4.0',
+       u'oc_5.0', u'oc_6.0', u'oc_7.0', u'oc_8.0', u'oc_9.0', u'oc_nan',
+       u'yrs_since_sold']
+
+    for idx, key in enumerate(keys):
+        print key, X[_max_pos][idx]
+
+    # residuals = sorted(residuals)
+    # print "res 0:10", residuals[0:10]
     # print
-    # print "testing Eval Set: RMSLE: {:2.4f}".format(eval_error)
-    #
-    # print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
-
-
-
+    # print
+    # print "res last 10", residuals[::-10]
 
 def make_data_splits(X, Y):
     '''
