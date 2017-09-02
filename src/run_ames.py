@@ -1,3 +1,5 @@
+import simplejson
+
 from model import AmesModel
 from data_pipeline import GetData
 
@@ -50,6 +52,15 @@ def main():
     boink = sorted(RMSEs)[15]
     mean = sum(RMSEs) / (len(RMSEs) * 1.0)
     print "Median RMSLE: {:2.4f} Mean RMSLE: {:2.4f}".format(boink, mean)
+
+    with open("../data/rmsle_log.txt", "r") as in_file:
+        read_file = in_file.read()
+
+    parent_list = simplejson.loads(read_file)
+    # print "parent_list", parent_list
+    parent_list.append(RMSEs)
+    with open("../data/rmsle_log.txt", "w") as out_file:
+        out_file.write(simplejson.dumps(parent_list))
 
     #######################################
     ### Run Eval, do about 1 in 10 runs ###

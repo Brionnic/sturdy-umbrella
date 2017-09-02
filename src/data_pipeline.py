@@ -85,7 +85,8 @@ class GetData():
         '''
         boink = pd.get_dummies(self.raw_data.loc[:,column])
         keys = boink.keys()
-        new_keys = [col_text + key.lower() for key in keys]
+        # make key into a string to handle numberical categories (int)
+        new_keys = [col_text + str(key).lower() for key in keys]
         boink.columns = new_keys
         self.data = pd.concat((self.data, boink), axis=1)
 
@@ -99,20 +100,22 @@ class GetData():
         # really basic stuff that isn't manipulated at all
         # SalePrice is carried in raw_data and never exists in data DataFrame
         # since price is the Y label and is returned separately
+
+        #############################################################
+        # Run: 000/001 minimum viable data                  #########
+        #############################################################
         self.data = self.raw_data[["Bedroom AbvGr", "TotRms AbvGrd",
                     "Garage Cars", "Overall Qual", "Lot Area", "Lot Frontage",
                    "Pool Area", "Fireplaces"]]
 
         self.raw_data.loc[:, "2nd Flr SF"].fillna(0, inplace=True)
 
+        #############################################################
+        # Run: 002 home_sf                                  #########
+        #############################################################
+
         self.data.loc[:,"home_sf"] = self.raw_data.loc[:,"1st Flr SF"] + \
                                         self.raw_data.loc[:,"2nd Flr SF"]
-
-        # amount of lot used ratio? lot / square_feet
-        # self.data.loc[:,"lot_home_area_ratio"] = self.raw_data.loc[:,"Lot Area"] \
-        #                         / (self.data.loc[:, "home_sf"] * 1.0)
-
-        self.data.loc[:,"has_2nd_flr"] = self.raw_data.loc[:,"2nd Flr SF"] != 0
 
         # fix nans
         self.data.loc[:,"Garage Cars"].fillna(0, inplace=True)
@@ -120,79 +123,71 @@ class GetData():
         temp_mean = self.data.loc[:,"Lot Frontage"].mean()
         self.data.loc[:,"Lot Frontage"].fillna(temp_mean, inplace=True)
 
-        self.dummify("Lot Shape", "lot_shape_")
-
         #############################################################
-        # room ratio?                                       #########
+        # Run: 003 Overall Qual                             #########
         #############################################################
-
-        self.data.loc[:,"bed_to_room_ratio"] = self.data.loc[:,"Bedroom AbvGr"] \
-                                    / (self.data.loc[:,"TotRms AbvGrd"] * 1.0)
-
-        #############################################################
-        # years since update                                #########
-        #############################################################
-
-        self.data.loc[:,"yrs_since_update"] = 2010 -self.raw_data["Year Remod/Add"]
-
-
-        #############################################################
-        # basement stuff                                    #########
-        #############################################################
-
-        self.dummify("Bsmt Qual", "bsmt_qual_")
-
-        # print "Bsmt Qual", self.raw_data["Bsmt Qual"].unique()
-        #
-        # boink = pd.get_dummies(self.raw_data["Bsmt Qual"])
-        # # [u'Ex', u'Fa', u'Gd', u'Po', u'TA']
-        # boink.columns = ["bsmt_qual_ex", "bsmt_qual_fa", "bsmt_qual_gd",
-        #                 "bsmt_qual_po", "bsmt_qual_ta" ]
-        #
-        # self.data = pd.concat((self.data, boink), axis=1)
-
         self.data.loc[:,"Overall Qual"] = self.raw_data.loc[:,"Overall Qual"]
 
         #############################################################
-        # pool stuff flag                                   #########
+        # run: 004 basement stuff                           #########
         #############################################################
-
-        has_pool = np.array(self.data.loc[:,"Pool Area"] > 0)
-        has_pool_df = pd.DataFrame(has_pool, columns=["has_pool"])
-        self.data = pd.concat((self.data, has_pool_df), axis=1)
+        self.dummify("Bsmt Qual", "bsmt_qual_")
 
         #############################################################
-        # Bathroom feature manipulation                     #########
+        # run: 005 Bathroom feature manipulation            #########
         #############################################################
         # combine bathroom stats
         self.data.loc[:, "total_baths"] = self.raw_data.loc[:, "Full Bath"] + \
                                             self.raw_data.loc[:, "Half Bath"]
 
-        self.data.loc[:,"total_baths"] = self.data.loc[:,"total_baths"].mask(self.data.loc[:,"total_baths"] == 0, 0.1)
+        # if bathrooms == 0 something is probably wrong, add a slight value
+        # in case we do a bathroom ratio later
+        # self.data.loc[:,"total_baths"] = self.data.loc[:,"total_baths"].mask(self.data.loc[:,"total_baths"] == 0, 0.1)
 
         #############################################################
-        # Overall Cond                                      #########
+        # run: 005 room ratio                               #########
         #############################################################
+        self.data.loc[:,"bed_to_room_ratio"] = self.data.loc[:,"Bedroom AbvGr"] \
+                                    / (self.data.loc[:,"TotRms AbvGrd"] * 1.0)
 
-        temp = self.raw_data["Overall Cond"]
+        #############################################################
+        # run: 006 yrs_since_update                         #########
+        #############################################################
+        self.data.loc[:,"yrs_since_update"] = 2010 -self.raw_data["Year Remod/Add"]
 
-        # try dummy columns instead
-        # self.data = pd.concat((self.data, temp), axis=1)
-        # #print temp.unique()
-        # # [5 6 7 2 8 4 9 3 1]
-        oc_dum = pd.get_dummies(temp)
-        key_list = temp.unique()
-        new_key_list = ["oc_" + str(key) for key in key_list]
-        oc_dum.columns = [new_key_list]
-        # print oc_dum.head()
-        self.data = pd.concat((self.data, oc_dum), axis=1)
+        #############################################################
+        # run: 006 overall cond flags                       #########
+        #############################################################
+        self.dummify("Overall Cond", "oc_")
 
+        # temp = self.raw_data["Overall Cond"]
+        #
+        # # try dummy columns instead
+        # # self.data = pd.concat((self.data, temp), axis=1)
+        # # #print temp.unique()
+        # # # [5 6 7 2 8 4 9 3 1]
+        # oc_dum = pd.get_dummies(temp)
+        # key_list = temp.unique()
+        # new_key_list = ["oc_" + str(key) for key in key_list]
+        # oc_dum.columns = [new_key_list]
+        # # print oc_dum.head()
+        # self.data = pd.concat((self.data, oc_dum), axis=1)
+
+
+        # #############################################################
+        # # pool stuff flag                                   #########
+        # #############################################################
+        #
+        # has_pool = np.array(self.data.loc[:,"Pool Area"] > 0)
+        # has_pool_df = pd.DataFrame(has_pool, columns=["has_pool"])
+        # self.data = pd.concat((self.data, has_pool_df), axis=1)
+        #
         #############################################################
         # Stuff to use for inflation adjustments            #########
         #############################################################
 
         # figure out how long since sale (in years)
-        self.data.loc[:,"yrs_since_sold"] = 2010 - self.raw_data.loc[:,"Yr Sold"]
+        # self.data.loc[:,"yrs_since_sold"] = 2010 - self.raw_data.loc[:,"Yr Sold"]
 
         # do the same for raw_data since we'll prob use that as the basis
         # for calculating inflation adjustment as Mo Sold and Months since sale
@@ -215,109 +210,134 @@ class GetData():
         # cpi_adjustment: [1.0, 1.0020171457387794, *snip*,
         #                 1.1048209783156833, 1.1092486132123047]
 
-        # bring months since sold to model
-        self.data.loc[:,"mon_since_sold"] = self.raw_data.loc[:, "mon_since_sold"]
-
-        # bring in what month sold, also
-        self.data.loc[:, "month_sold"] = self.raw_data.loc[:,"Mo Sold"]
-
-        #############################################################
-        # Zoning info                                       #########
-        #############################################################
-
-        #raw_data.loc[:,"MS Zoning"].unique()
-        # array(['RL', 'RH', 'FV', 'RM', 'C (all)', 'I (all)', 'A (agr)'], dtype=object)
-        boink = pd.get_dummies(self.raw_data.loc[:,"MS Zoning"])
-
-        boink.columns = ["zoning_rl", "zoning_rh", "zoning_fv", "zoning_rm", "zoning_c_all", "zoning_i_all", "zoning_a_all"]
-
-        self.data = pd.concat((self.data, boink), axis=1)
-
-        #############################################################
-        # Roof stuff                                        #########
-        #############################################################
-
-        # self.raw_data.loc[:,"Roof Style"].unique()
-        # array(['Hip', 'Gable', 'Mansard', 'Gambrel', 'Shed', 'Flat'], dtype=object)
-
-        boink = pd.get_dummies(self.raw_data.loc[:,"Roof Style"])
-        boink.columns = ["roof_hip", "roof_gable", "roof_mansard",
-                        "roof_gambrel", "roof_shed", "roof_flat"]
-
-        self.data = pd.concat((self.data, boink), axis=1)
-
-        #############################################################
-        # Kitchen stuff                                     #########
-        #############################################################
-
-        boink = pd.get_dummies(self.raw_data.loc[:,"Kitchen Qual"])
-        keys = boink.keys()
-
-        # print boink.head()
-        # print keys
-        # Index([u'Ex', u'Fa', u'Gd', u'Po', u'TA'], dtype='object')
-        new_keys = ["kqual_" + key.lower() for key in keys]
-        boink.columns = new_keys
-        self.data = pd.concat((self.data, boink), axis=1)
-
-        #############################################################
-        # Neighborhood flags                                #########
-        #############################################################
-        # print self.raw_data.loc[:,"Neighborhood"].unique()
-        boink = pd.get_dummies(self.raw_data.loc[:,"Neighborhood"])
-        keys = boink.keys()
-        new_keys = ["neigh_" + key.lower() for key in keys]
-        boink.columns = new_keys
-
-        self.data = pd.concat((self.data, boink), axis=1)
-
-        #############################################################
-        # Condition types, road sizes near house?           #########
-        #############################################################
-
-        self.dummify("Condition 1", "cond_1_")
-        self.dummify("Condition 2", "cond_2_")
-
-        #############################################################
-        # fireplace stuff                                   #########
-        #############################################################
-
-        self.dummify("Fireplace Qu", "fp_qual_")
-
-        #############################################################
-        # sale type    and condition                        #########
-        #############################################################
-        self.dummify("Sale Condition", "sale_cond_")
-        self.dummify("Sale Type", "sale_type_")
-
-        #############################################################
-        # house stype                                       #########
-        #############################################################
-        # self.dummify("House Style", "house_style_")
-
-        self.dummify("Land Contour", "land_cont_")
-        self.dummify("Lot Config", "lot_conf_")
-        self.dummify("Land Slope", "land_slope_")
-        #############################################################
-        # exterior stuff                                    #########
-        #############################################################
-
-        self.dummify("Exterior 1st", "ext_1_")
-        self.dummify("Exterior 2nd", "ext_2_")
-
-        self.dummify("Exter Qual", "ext_qual_")
-        self.dummify("Exter Cond", "ext_cond_")
-
-        self.dummify("Foundation", "foundation_")
-
-        self.raw_data.loc[:,"Total Bsmt SF"].fillna(0, inplace=True)
-        self.data.loc[:,"Total Bsmt SF"] = self.raw_data.loc[:,"Total Bsmt SF"]
-
-        self.raw_data.loc[:, "Mas Vnr Type"].fillna("None", inplace=True)
-        self.dummify("Mas Vnr Type", "mas_vnr_typ_")
-        self.raw_data.loc[:,"Mas Vnr Area"].fillna(0, inplace=True)
-        self.data.loc[:,"Mas Vnr Area"] = self.raw_data.loc[:, "Mas Vnr Area"]
-
+        # # bring months since sold to model
+        # self.data.loc[:,"mon_since_sold"] = self.raw_data.loc[:, "mon_since_sold"]
+        #
+        # # bring in what month sold, also
+        # self.data.loc[:, "month_sold"] = self.raw_data.loc[:,"Mo Sold"]
+        #
+        # #############################################################
+        # # Zoning info                                       #########
+        # #############################################################
+        #
+        # #raw_data.loc[:,"MS Zoning"].unique()
+        # # array(['RL', 'RH', 'FV', 'RM', 'C (all)', 'I (all)', 'A (agr)'], dtype=object)
+        # boink = pd.get_dummies(self.raw_data.loc[:,"MS Zoning"])
+        #
+        # boink.columns = ["zoning_rl", "zoning_rh", "zoning_fv", "zoning_rm", "zoning_c_all", "zoning_i_all", "zoning_a_all"]
+        #
+        # self.data = pd.concat((self.data, boink), axis=1)
+        #
+        # #############################################################
+        # # Roof stuff                                        #########
+        # #############################################################
+        #
+        # # self.raw_data.loc[:,"Roof Style"].unique()
+        # # array(['Hip', 'Gable', 'Mansard', 'Gambrel', 'Shed', 'Flat'], dtype=object)
+        #
+        # boink = pd.get_dummies(self.raw_data.loc[:,"Roof Style"])
+        # boink.columns = ["roof_hip", "roof_gable", "roof_mansard",
+        #                 "roof_gambrel", "roof_shed", "roof_flat"]
+        #
+        # self.data = pd.concat((self.data, boink), axis=1)
+        #
+        # #############################################################
+        # # Kitchen stuff                                     #########
+        # #############################################################
+        #
+        # boink = pd.get_dummies(self.raw_data.loc[:,"Kitchen Qual"])
+        # keys = boink.keys()
+        #
+        # # print boink.head()
+        # # print keys
+        # # Index([u'Ex', u'Fa', u'Gd', u'Po', u'TA'], dtype='object')
+        # new_keys = ["kqual_" + key.lower() for key in keys]
+        # boink.columns = new_keys
+        # self.data = pd.concat((self.data, boink), axis=1)
+        #
+        # #############################################################
+        # # Neighborhood flags                                #########
+        # #############################################################
+        # # print self.raw_data.loc[:,"Neighborhood"].unique()
+        # boink = pd.get_dummies(self.raw_data.loc[:,"Neighborhood"])
+        # keys = boink.keys()
+        # new_keys = ["neigh_" + key.lower() for key in keys]
+        # boink.columns = new_keys
+        #
+        # self.data = pd.concat((self.data, boink), axis=1)
+        #
+        # self.dummify("Lot Shape", "lot_shape_")
+        #
+        # #############################################################
+        # # Condition types, road sizes near house?           #########
+        # #############################################################
+        #
+        # self.dummify("Condition 1", "cond_1_")
+        # self.dummify("Condition 2", "cond_2_")
+        #
+        # #############################################################
+        # # fireplace stuff                                   #########
+        # #############################################################
+        #
+        # self.dummify("Fireplace Qu", "fp_qual_")
+        #
+        # #############################################################
+        # # sale type    and condition                        #########
+        # #############################################################
+        # self.dummify("Sale Condition", "sale_cond_")
+        # self.dummify("Sale Type", "sale_type_")
+        #
+        # #############################################################
+        # # house stype                                       #########
+        # #############################################################
+        # # self.dummify("House Style", "house_style_")
+        #
+        # self.dummify("Land Contour", "land_cont_")
+        # self.dummify("Lot Config", "lot_conf_")
+        # self.dummify("Land Slope", "land_slope_")
+        # #############################################################
+        # # exterior stuff                                    #########
+        # #############################################################
+        #
+        # self.dummify("Exterior 1st", "ext_1_")
+        # self.dummify("Exterior 2nd", "ext_2_")
+        #
+        # self.dummify("Exter Qual", "ext_qual_")
+        # self.dummify("Exter Cond", "ext_cond_")
+        #
+        # self.dummify("Foundation", "foundation_")
+        #
+        # self.raw_data.loc[:, "Mas Vnr Type"].fillna("None", inplace=True)
+        # self.dummify("Mas Vnr Type", "mas_vnr_typ_")
+        # self.raw_data.loc[:,"Mas Vnr Area"].fillna(0, inplace=True)
+        # self.data.loc[:,"Mas Vnr Area"] = self.raw_data.loc[:, "Mas Vnr Area"]
+        #
+        # #############################################################
+        # # Much more basement stuff                          #########
+        # #############################################################
+        # # Actually I think pandas dummify will handle nan's ok
+        # # self.raw_data.loc[:,"Bsmt Cond"].fillna("TA", inplace=True)
+        # self.dummify("Bsmt Cond", "bsmt_cond_")
+        #
+        # self.dummify("Bsmt Exposure", "bsmt_expos_")
+        #
+        # self.dummify("BsmtFin Type 1", "bsmt_fin_typ1_")
+        #
+        # # seems like there is one nan value but can replace with 0
+        # # probably the nan doesn't have a basement?
+        # self.raw_data.loc[:, "BsmtFin SF 1"].fillna(0, inplace=True)
+        # self.data.loc[:,"bsmtfin_sf_1"] = self.raw_data.loc[:, "BsmtFin SF 1"]
+        #
+        # self.dummify("BsmtFin Type 2", "bsmt_fin_typ2_")
+        #
+        # self.raw_data.loc[:,"BsmtFin SF 2"].fillna(0, inplace=True)
+        # self.data.loc[:,"bsmtfin_sf_2"] = self.raw_data.loc[:, "BsmtFin SF 2"]
+        #
+        # self.raw_data.loc[:,"Bsmt Unf SF"].fillna(0, inplace=True)
+        # self.data.loc[:,"bsmtunf_sf"] = self.raw_data.loc[:, "Bsmt Unf SF"]
+        #
+        # self.raw_data.loc[:,"Total Bsmt SF"].fillna(0, inplace=True)
+        # self.data.loc[:,"Total Bsmt SF"] = self.raw_data.loc[:,"Total Bsmt SF"]
 
         #############################################################
         # Bldg type                                         #########
@@ -339,6 +359,13 @@ class GetData():
         #############################
         #############################
 
+        #
+        # # amount of lot used ratio? lot / square_feet
+        # # self.data.loc[:,"lot_home_area_ratio"] = self.raw_data.loc[:,"Lot Area"] \
+        # #                         / (self.data.loc[:, "home_sf"] * 1.0)
+        #
+        # self.data.loc[:,"has_2nd_flr"] = self.raw_data.loc[:,"2nd Flr SF"] != 0
+        #
 
         # self.data.loc[:,"Gr Liv Area"] = self.raw_data.loc[:, "Gr Liv Area"]
 

@@ -25,8 +25,8 @@ from sklearn.tree import DecisionTreeRegressor
 class AmesModel():
 
     def __init__(self):
-        # self.model_1 = LinearRegression()
-        self.model_1 = GradientBoostingRegressor(learning_rate=0.01, n_estimators=1000)
+        self.model_1 = LinearRegression()
+        # self.model_1 = GradientBoostingRegressor(learning_rate=0.01, n_estimators=1000)
 
     def fit(self, X, y):
         self.model_1.fit(X, y)
