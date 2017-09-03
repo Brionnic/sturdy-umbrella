@@ -24,6 +24,11 @@ class GetData():
         # using log price?
         self.log_price = log_price
 
+        self.dummy_data = None
+
+        pd.set_option("display.max_rows",1001)
+        pd.set_option("display.max_columns", 1000)
+
     def fit(self):
         # call method to do feature transformations, feature engineering
         self.manipulate_data()
@@ -63,22 +68,38 @@ class GetData():
 
         print self.X.info()
 
-
-        print "keys for data_frame:", self.X.keys()
+        # print "keys for data_frame:", self.X.keys()
 
         # scaling on Boolean values appears to be contributing to linear regression
         # explosions?
         scaler = StandardScaler()
 
-        # self.X = scaler.fit_transform(self.X)
+        # one-hot columns now stored in self.dummy_data
+        self.X = pd.DataFrame(scaler.fit_transform(self.X), columns=self.X.keys())
 
         # only scale continuous type variables
-        X_cont = self.X.select_dtypes(include=['float64', "int64"])
-        X_cont_scaled = pd.DataFrame(scaler.fit_transform(X_cont), columns=X_cont.keys())
+        # X_cont = self.X.select_dtypes(include=['float64', "int64"])
+        # X_cont_scaled = pd.DataFrame(scaler.fit_transform(X_cont), columns=X_cont.keys())
+        #
+        # X_discrete = self.X.select_dtypes(include=["uint8", "bool"])
 
-        X_discrete = self.X.select_dtypes(include=["uint8"])
+        # print "dummy columns:", self.dummy_data.info()
 
-        self.X = pd.concat((X_cont_scaled, X_discrete), axis=1)
+        self.X = pd.concat((self.X, self.dummy_data), axis=1)
+
+        # self.X.loc[:,"PID"] = self.raw_data.loc[:, "PID"]
+        # self.X.set_index(self.raw_data.loc[:,"PID"].values)
+        # print
+        # print
+        # print "Data Summary before going into model:"
+        # print
+        # print self.X.describe()
+        # print
+        print self.X.info()
+        # print
+        # print self.X.index.values
+
+        # 372, 945, 2180, 1498, 1533
 
         return self
 
@@ -98,13 +119,15 @@ class GetData():
         '''
         take in categorical column and convert it to flagged dummy columns
         '''
-        boink = pd.get_dummies(self.raw_data.loc[:,column], dummy_na=True)
+        boink = pd.get_dummies(self.raw_data.loc[:,column], dummy_na=True).astype(bool)
+
+
         keys = boink.keys()
         # make key into a string to handle numberical categories (int)
-        new_keys = [col_text + str(key).lower() for key in keys]
+        new_keys = [col_text + strip_string(key) for key in keys]
         boink.columns = new_keys
-        self.data = pd.concat((self.data, boink), axis=1)
 
+        self.dummy_data = pd.concat((self.dummy_data, boink), axis=1).astype(bool)
 
     def manipulate_data(self):
         '''
@@ -124,6 +147,15 @@ class GetData():
                    "Pool Area", "Fireplaces"]]
 
         self.raw_data.loc[:, "2nd Flr SF"].fillna(0, inplace=True)
+
+        # moved stage 11 to first so that dummy_data is not None
+        #############################################################
+        # run: 011 has_2nd_flr flag                         #########
+        #############################################################
+        self.dummy_data = pd.DataFrame((self.raw_data.loc[:,"2nd Flr SF"] != 0), columns=["has_2nd_flr"]).astype(bool)
+        # [:,"has_2nd_flr"] = self.raw_data.loc[:,"2nd Flr SF"] != 0
+
+        # self.data.loc[:,"PID"] = self.raw_data.loc[:,"PID"]
 
         #############################################################
         # Run: 002 home_sf                                  #########
@@ -160,20 +192,30 @@ class GetData():
         # self.data.loc[:,"total_baths"] = self.data.loc[:,"total_baths"].mask(self.data.loc[:,"total_baths"] == 0, 0.1)
 
         #############################################################
-        # run: 005 room ratio                               #########
+        # run: 006 room ratio                               #########
         #############################################################
         self.data.loc[:,"bed_to_room_ratio"] = self.data.loc[:,"Bedroom AbvGr"] \
                                     / (self.data.loc[:,"TotRms AbvGrd"] * 1.0)
 
         #############################################################
-        # run: 006 yrs_since_update                         #########
+        # run: 007 yrs_since_update                         #########
         #############################################################
         self.data.loc[:,"yrs_since_update"] = 2010 -self.raw_data["Year Remod/Add"]
 
         #############################################################
-        # run: 006 overall cond flags                       #########
+        # run: 008 overall cond flags                       #########
         #############################################################
         self.dummify("Overall Cond", "oc_")
+
+        #############################################################
+        # run: 009 years since sold                         #########
+        #############################################################
+        # figure out how long since sale (in years)
+        # StandardScaler was making LinearRegression explode because of this feature
+        # which is sort of more categorical anyways
+        self.raw_data.loc[:,"yrs_since_sold"] = 2010 - self.raw_data.loc[:,"Yr Sold"]
+        self.dummify("yrs_since_sold", "yrs_since_sold_")
+
 
         # #############################################################
         # # pool stuff flag                                   #########
@@ -186,13 +228,6 @@ class GetData():
         #############################################################
         # Stuff to use for inflation adjustments            #########
         #############################################################
-
-        #############################################################
-        # run: 007 years since sold                         #########
-        #############################################################
-
-        # figure out how long since sale (in years)
-        self.data.loc[:,"yrs_since_sold"] = 2010 - self.raw_data.loc[:,"Yr Sold"]
 
         # do the same for raw_data since we'll prob use that as the basis
         # for calculating inflation adjustment as Mo Sold and Months since sale
@@ -215,16 +250,22 @@ class GetData():
         # cpi_adjustment: [1.0, 1.0020171457387794, *snip*,
         #                 1.1048209783156833, 1.1092486132123047]
 
-        # # bring months since sold to model
-        # self.data.loc[:,"mon_since_sold"] = self.raw_data.loc[:, "mon_since_sold"]
-        #
-        # # bring in what month sold, also
-        # self.data.loc[:, "month_sold"] = self.raw_data.loc[:,"Mo Sold"]
-        #
-        # #############################################################
-        # # Zoning info                                       #########
-        # #############################################################
-        #
+        #############################################################
+        # run: 012 bring in months since sold and mo sold   #########
+        #############################################################
+        # bring months since sold to model
+        self.data.loc[:,"mon_since_sold"] = self.raw_data.loc[:, "mon_since_sold"]
+
+        # bring in what month sold, also
+        self.data.loc[:, "month_sold"] = self.raw_data.loc[:,"Mo Sold"]
+
+        #############################################################
+        # run: 013 Zoning info                              #########
+        #############################################################
+        # zoning_cols = ["zoning_rl", "zoning_rh", "zoning_fv", "zoning_rm",
+        #                 "zoning_c_all", "zoning_i_all", "zoning_a_all"]
+
+        self.dummify("MS Zoning", "zoning_")
         # #raw_data.loc[:,"MS Zoning"].unique()
         # # array(['RL', 'RH', 'FV', 'RM', 'C (all)', 'I (all)', 'A (agr)'], dtype=object)
         # boink = pd.get_dummies(self.raw_data.loc[:,"MS Zoning"])
@@ -232,34 +273,27 @@ class GetData():
         # boink.columns = ["zoning_rl", "zoning_rh", "zoning_fv", "zoning_rm", "zoning_c_all", "zoning_i_all", "zoning_a_all"]
         #
         # self.data = pd.concat((self.data, boink), axis=1)
-        #
-        # #############################################################
-        # # Roof stuff                                        #########
-        # #############################################################
-        #
-        # # self.raw_data.loc[:,"Roof Style"].unique()
-        # # array(['Hip', 'Gable', 'Mansard', 'Gambrel', 'Shed', 'Flat'], dtype=object)
-        #
-        # boink = pd.get_dummies(self.raw_data.loc[:,"Roof Style"])
-        # boink.columns = ["roof_hip", "roof_gable", "roof_mansard",
-        #                 "roof_gambrel", "roof_shed", "roof_flat"]
-        #
-        # self.data = pd.concat((self.data, boink), axis=1)
-        #
-        # #############################################################
-        # # Kitchen stuff                                     #########
-        # #############################################################
-        #
-        # boink = pd.get_dummies(self.raw_data.loc[:,"Kitchen Qual"])
-        # keys = boink.keys()
-        #
-        # # print boink.head()
-        # # print keys
-        # # Index([u'Ex', u'Fa', u'Gd', u'Po', u'TA'], dtype='object')
-        # new_keys = ["kqual_" + key.lower() for key in keys]
-        # boink.columns = new_keys
-        # self.data = pd.concat((self.data, boink), axis=1)
-        #
+
+        #############################################################
+        # run: 014 Roof stuff                               #########
+        #############################################################
+        self.dummify("Roof Style", "roof_")
+
+        #############################################################
+        # run: 016 Kitchen qual                             #########
+        #############################################################
+        self.dummify("Kitchen Qual", "kqual_")
+
+        boink = pd.get_dummies(self.raw_data.loc[:,"Kitchen Qual"])
+        keys = boink.keys()
+
+        # print boink.head()
+        # print keys
+        # Index([u'Ex', u'Fa', u'Gd', u'Po', u'TA'], dtype='object')
+        new_keys = ["kqual_" + key.lower() for key in keys]
+        boink.columns = new_keys
+        self.data = pd.concat((self.data, boink), axis=1)
+
         # #############################################################
         # # Neighborhood flags                                #########
         # #############################################################
@@ -369,8 +403,7 @@ class GetData():
         # # self.data.loc[:,"lot_home_area_ratio"] = self.raw_data.loc[:,"Lot Area"] \
         # #                         / (self.data.loc[:, "home_sf"] * 1.0)
         #
-        # self.data.loc[:,"has_2nd_flr"] = self.raw_data.loc[:,"2nd Flr SF"] != 0
-        #
+
 
         # self.data.loc[:,"Gr Liv Area"] = self.raw_data.loc[:, "Gr Liv Area"]
 
@@ -391,6 +424,21 @@ class GetData():
 
         # self.data = pd.concat((self.data, oq_dummies), axis=1)
         #simple_data.pop("Overall Qual")
+
+def strip_string(_str):
+    '''
+    strip parenthesis from strings and replace ' ' with '_'
+
+    returns a string
+    '''
+    temp = str(_str)
+
+    junk = "(){}"
+
+    temp = "".join([c for c in temp if c not in junk])
+    temp = temp.replace(" ", "_")
+
+    return temp.lower()
 
 def figure_months(years_since_sale, month_sold):
     '''

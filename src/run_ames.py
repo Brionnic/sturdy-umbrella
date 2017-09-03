@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 
 def main():
-    ames_data = GetData(adjust_inflation=True)
+    ames_data = GetData(log_price=True, adjust_inflation=True)
     ames_data.fit()
     X, y = ames_data.transform()
 
@@ -26,7 +26,9 @@ def main():
 
     RMSEs = []
 
-    for idx in range(31):
+    runs = 31
+
+    for idx in range(runs):
         X_train, X_test, y_train, y_test = train_test_split(X_TRAIN, y_TRAIN, test_size=0.3)
 
         model = AmesModel()
@@ -49,7 +51,7 @@ def main():
 
         # if the error is big then it blew up in the predictions
         # for some reason
-        if error > 1:
+        if error > 1.0:
             plot_residuals(y_preds, y_test, X_test)
 
         print "RSMLE: {:2.4f}".format(error)
@@ -59,31 +61,32 @@ def main():
     mean = sum(RMSEs) / (len(RMSEs) * 1.0)
     print "Median RMSLE: {:2.4f} Mean RMSLE: {:2.4f}".format(boink, mean)
 
-    # with open("../data/rmsle_log.txt", "r") as in_file:
-    #     read_file = in_file.read()
+    with open("../data/rmsle_log.txt", "r") as in_file:
+        read_file = in_file.read()
+
+    parent_list = simplejson.loads(read_file)
+    # print "parent_list", parent_list
+    parent_list.append(RMSEs)
+    with open("../data/rmsle_log.txt", "w") as out_file:
+        out_file.write(simplejson.dumps(parent_list))
+
+    # #######################################
+    # ### Run Eval, do about 1 in 10 runs ###
+    # #######################################
     #
-    # parent_list = simplejson.loads(read_file)
-    # # print "parent_list", parent_list
-    # parent_list.append(RMSEs)
-    # with open("../data/rmsle_log.txt", "w") as out_file:
-    #     out_file.write(simplejson.dumps(parent_list))
-
-    #######################################
-    ### Run Eval, do about 1 in 10 runs ###
-    #######################################
-
-    eval_preds = model.transform(X_eval)
-    eval_error = np.sqrt(mean_squared_error(eval_preds, y_eval))
-    print
-    print "testing Eval Set: RMSLE: {:2.4f}".format(eval_error)
-
-    print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
+    # eval_preds = model.transform(X_eval)
+    # eval_error = np.sqrt(mean_squared_error(eval_preds, y_eval))
+    # print
+    # print "testing Eval Set: RMSLE: {:2.4f}".format(eval_error)
+    #
+    # print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
 
 
 def plot_residuals(y_preds, y_actuals, X):
     '''
     Try to troubleshoot why linear regression is exploding
     '''
+    y_actuals = np.array(y_actuals)
 
     # perfect predictioon would be 0
     residuals = y_preds - y_actuals
@@ -93,24 +96,37 @@ def plot_residuals(y_preds, y_actuals, X):
     ax.set_title("Difference in Predicted Price vs Actual Price (log)")
     ax.set_xlabel("Actual Price")
     ax.set_ylabel("Error in Predicted Price")
-    plt.show()
+    # plt.show()
 
-    print "len residuals:", len(residuals)
+    print "                          len residuals:", len(residuals), "len preds:", len(y_preds), "len actuals:", len(y_actuals)
+    print "                          type y actuals:", type(y_actuals)
     _max = residuals.max()
-    print "max:", _max
-    _max_pos = list(residuals).index(_max)
-    print "argmax:", _max_pos
+    print "                          max:", _max
+    print "                          argmax (index?):", residuals.argmax()
 
-    keys = [u'Bedroom AbvGr', u'TotRms AbvGrd', u'Garage Cars', u'Overall Qual',
-       u'Lot Area', u'Lot Frontage', u'Pool Area', u'Fireplaces', u'home_sf',
-       u'bsmt_qual_ex', u'bsmt_qual_fa', u'bsmt_qual_gd', u'bsmt_qual_po',
-       u'bsmt_qual_ta', u'bsmt_qual_nan', u'total_baths', u'bed_to_room_ratio',
-       u'yrs_since_update', u'oc_1.0', u'oc_2.0', u'oc_3.0', u'oc_4.0',
-       u'oc_5.0', u'oc_6.0', u'oc_7.0', u'oc_8.0', u'oc_9.0', u'oc_nan',
-       u'yrs_since_sold']
+    index = list(residuals).index(_max)
+    print "                          index:", index
+    print "                          y_actuals:", y_actuals[index]
 
-    for idx, key in enumerate(keys):
-        print key, X[_max_pos][idx]
+    print "                          X?:", X.iloc[index, :]
+    # print "PID:", X.iloc[index, "PID"]
+
+    # print "###########################"
+    # print X.keys()
+    # keys = X.keys()
+    #
+    # print "basement poor", X.loc[:,"bsmt_qual_po"].describe()
+
+    # keys = [u'Bedroom AbvGr', u'TotRms AbvGrd', u'Garage Cars', u'Overall Qual',
+    #    u'Lot Area', u'Lot Frontage', u'Pool Area', u'Fireplaces', u'home_sf',
+    #    u'bsmt_qual_ex', u'bsmt_qual_fa', u'bsmt_qual_gd', u'bsmt_qual_po',
+    #    u'bsmt_qual_ta', u'bsmt_qual_nan', u'total_baths', u'bed_to_room_ratio',
+    #    u'yrs_since_update', u'oc_1.0', u'oc_2.0', u'oc_3.0', u'oc_4.0',
+    #    u'oc_5.0', u'oc_6.0', u'oc_7.0', u'oc_8.0', u'oc_9.0', u'oc_nan',
+    #    u'yrs_since_sold']
+
+    # for idx, key in enumerate(keys):
+    #     print key, X.iloc[_max_pos, idx]
 
     # residuals = sorted(residuals)
     # print "res 0:10", residuals[0:10]

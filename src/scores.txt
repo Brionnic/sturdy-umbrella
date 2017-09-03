@@ -9,9 +9,13 @@
 8, 0.1706, "did dummy columns for 'Overall Cond' "
 9, 0.1737, "added 'yrs_since_sold' feature"; LinearRegression exploding sometimes mean RMSLE 14798879898.6276"
 10, 0.1698, "fixed feature scaling to only work on non-boolean values; test set eval 0.1445"
-12, 0.1545, "standardized data with StandardScaler"
-13, 0.1568, "adjusting for inflation now"
-14, 0.1588, "added month_sold and mon_since_sold features"
+11, 0.1684, "added has_2nd_flr flag"
+12, 0.1674, "added month_sold and mon_since_sold features"
+13, 0.1708, "added flags for MS Zoning"
+14, 0.1633, "added roof type flags; LinearRegression exploding again; seems like separate standardizing isn't working correctly"
+15, 0.1666, "fixed yrs_since_sold which being StandardScaler-ed was causing LinearRegression exploding - made into one-hot"
+
+
 15, 0.1544, "add flag for having a second floor"
 16, 0.1527, "add flags for MS Zoning"
 17, 0.1516, "tune GradientBoostingRegressor for learning_rate=0.001 and n_estimators=10000"
