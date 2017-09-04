@@ -49,10 +49,12 @@ def main():
 
         error = np.sqrt(mean_squared_error(y_preds, y_test))
 
+        # print_coefs(model, X)
+
         # if the error is big then it blew up in the predictions
         # for some reason
         if error > 1.0:
-            plot_residuals(y_preds, y_test, X_test)
+            plot_residuals(y_preds, y_test, X_test, model)
 
         print "RSMLE: {:2.4f}".format(error)
         RMSEs.append(error)
@@ -61,14 +63,14 @@ def main():
     mean = sum(RMSEs) / (len(RMSEs) * 1.0)
     print "Median RMSLE: {:2.4f} Mean RMSLE: {:2.4f}".format(boink, mean)
 
-    with open("../data/rmsle_log.txt", "r") as in_file:
-        read_file = in_file.read()
-
-    parent_list = simplejson.loads(read_file)
-    # print "parent_list", parent_list
-    parent_list.append(RMSEs)
-    with open("../data/rmsle_log.txt", "w") as out_file:
-        out_file.write(simplejson.dumps(parent_list))
+    # with open("../data/rmsle_log.txt", "r") as in_file:
+    #     read_file = in_file.read()
+    #
+    # parent_list = simplejson.loads(read_file)
+    # # print "parent_list", parent_list
+    # parent_list.append(RMSEs)
+    # with open("../data/rmsle_log.txt", "w") as out_file:
+    #     out_file.write(simplejson.dumps(parent_list))
 
     # #######################################
     # ### Run Eval, do about 1 in 10 runs ###
@@ -81,8 +83,17 @@ def main():
     #
     # print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
 
+def print_coefs(model, X):
+    '''
+    Try to print out the coefficients in an interpretable manner
+    '''
+    coefs = list(model.model_1.coef_)
+    keys = X.keys()
 
-def plot_residuals(y_preds, y_actuals, X):
+    for idx, key in enumerate(keys):
+        print "Feature: {:<20} Coef:{:4.4f}".format(key, coefs[idx])
+
+def plot_residuals(y_preds, y_actuals, X, model):
     '''
     Try to troubleshoot why linear regression is exploding
     '''

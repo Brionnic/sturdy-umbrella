@@ -99,7 +99,7 @@ class GetData():
         # print
         # print self.X.index.values
 
-        # 372, 945, 2180, 1498, 1533
+        # 372, 945, 2180, 1498, 1533, 2788, 181
 
         return self
 
@@ -294,103 +294,166 @@ class GetData():
         boink.columns = new_keys
         self.data = pd.concat((self.data, boink), axis=1)
 
-        # #############################################################
-        # # Neighborhood flags                                #########
-        # #############################################################
-        # # print self.raw_data.loc[:,"Neighborhood"].unique()
-        # boink = pd.get_dummies(self.raw_data.loc[:,"Neighborhood"])
-        # keys = boink.keys()
-        # new_keys = ["neigh_" + key.lower() for key in keys]
-        # boink.columns = new_keys
-        #
-        # self.data = pd.concat((self.data, boink), axis=1)
-        #
-        # self.dummify("Lot Shape", "lot_shape_")
-        #
-        # #############################################################
-        # # Condition types, road sizes near house?           #########
-        # #############################################################
-        #
-        # self.dummify("Condition 1", "cond_1_")
-        # self.dummify("Condition 2", "cond_2_")
-        #
-        # #############################################################
-        # # fireplace stuff                                   #########
-        # #############################################################
-        #
-        # self.dummify("Fireplace Qu", "fp_qual_")
-        #
-        # #############################################################
-        # # sale type    and condition                        #########
-        # #############################################################
-        # self.dummify("Sale Condition", "sale_cond_")
-        # self.dummify("Sale Type", "sale_type_")
-        #
-        # #############################################################
-        # # house stype                                       #########
-        # #############################################################
-        # # self.dummify("House Style", "house_style_")
-        #
-        # self.dummify("Land Contour", "land_cont_")
-        # self.dummify("Lot Config", "lot_conf_")
-        # self.dummify("Land Slope", "land_slope_")
-        # #############################################################
-        # # exterior stuff                                    #########
-        # #############################################################
-        #
-        # self.dummify("Exterior 1st", "ext_1_")
-        # self.dummify("Exterior 2nd", "ext_2_")
-        #
-        # self.dummify("Exter Qual", "ext_qual_")
-        # self.dummify("Exter Cond", "ext_cond_")
-        #
-        # self.dummify("Foundation", "foundation_")
-        #
-        # self.raw_data.loc[:, "Mas Vnr Type"].fillna("None", inplace=True)
-        # self.dummify("Mas Vnr Type", "mas_vnr_typ_")
-        # self.raw_data.loc[:,"Mas Vnr Area"].fillna(0, inplace=True)
-        # self.data.loc[:,"Mas Vnr Area"] = self.raw_data.loc[:, "Mas Vnr Area"]
-        #
-        # #############################################################
-        # # Much more basement stuff                          #########
-        # #############################################################
-        # # Actually I think pandas dummify will handle nan's ok
-        # # self.raw_data.loc[:,"Bsmt Cond"].fillna("TA", inplace=True)
-        # self.dummify("Bsmt Cond", "bsmt_cond_")
-        #
-        # self.dummify("Bsmt Exposure", "bsmt_expos_")
-        #
-        # self.dummify("BsmtFin Type 1", "bsmt_fin_typ1_")
-        #
-        # # seems like there is one nan value but can replace with 0
-        # # probably the nan doesn't have a basement?
-        # self.raw_data.loc[:, "BsmtFin SF 1"].fillna(0, inplace=True)
-        # self.data.loc[:,"bsmtfin_sf_1"] = self.raw_data.loc[:, "BsmtFin SF 1"]
-        #
-        # self.dummify("BsmtFin Type 2", "bsmt_fin_typ2_")
-        #
-        # self.raw_data.loc[:,"BsmtFin SF 2"].fillna(0, inplace=True)
-        # self.data.loc[:,"bsmtfin_sf_2"] = self.raw_data.loc[:, "BsmtFin SF 2"]
-        #
-        # self.raw_data.loc[:,"Bsmt Unf SF"].fillna(0, inplace=True)
-        # self.data.loc[:,"bsmtunf_sf"] = self.raw_data.loc[:, "Bsmt Unf SF"]
-        #
-        # self.raw_data.loc[:,"Total Bsmt SF"].fillna(0, inplace=True)
-        # self.data.loc[:,"Total Bsmt SF"] = self.raw_data.loc[:,"Total Bsmt SF"]
+        #############################################################
+        # run: 017 Neighborhood, lot shape flags            #########
+        #############################################################
+        # self.dummify("Neighborhood", "neigh_")
+
+        self.dummify("Lot Shape", "lot_shape_")
 
         #############################################################
-        # Bldg type                                         #########
+        # run: 018 has_huge_liv_area                        #########
+        #############################################################
+        self.dummy_data.loc[:,"has_huge_liv_area"] = (self.data["home_sf"] > 4000).astype(bool)
+        self.dummy_data.loc[:,"has_tiny_liv_area"] = (self.data["home_sf"] < 500).astype(bool)
+
+        #############################################################
+        # run: 019 log transformation of living area        #########
+        #############################################################
+        self.data.loc[:,"log_home_sf"] = np.log(self.data["home_sf"])
+        self.data.pop("home_sf")
+
+
+        #############################################################
+        # run: 020 Condition types, road sizes near house?  #########
+        #############################################################
+        self.dummify("Condition 1", "cond_1_")
+        self.dummify("Condition 2", "cond_2_")
+
+        #############################################################
+        # run: 021 fireplace stuff, sale type info          #########
+        #############################################################
+        self.dummify("Fireplace Qu", "fp_qual_")
+
+        #############################################################
+        # sale type    and condition                        #########
+        #############################################################
+        self.dummify("Sale Condition", "sale_cond_")
+        self.dummify("Sale Type", "sale_type_")
+
+        #############################################################
+        # run: 022 house style, land stuff                  #########
+        #############################################################
+        self.dummify("House Style", "house_style_")
+
+        self.dummify("Land Contour", "land_cont_")
+        self.dummify("Lot Config", "lot_conf_")
+        self.dummify("Land Slope", "land_slope_")
+
+        #############################################################
+        # run: 023 exterior stuff                           #########
         #############################################################
 
-        # self.dummify("Bldg Type", "bldg_type_")
+        self.dummify("Exterior 1st", "ext_1_")
+        self.dummify("Exterior 2nd", "ext_2_")
 
-        # print self.raw_data.loc[:,"Roof Matl"].unique()
-        # ['CompShg' 'WdShake' 'Tar&Grv' 'WdShngl' 'Membran' 'ClyTile' 'Roll' 'Metal']
-        # boink = pd.get_dummies(self.raw_data.loc[:, "Roof Matl"])
-        # boink.columns = ["roof_mat_compshg", "roof_mat_wdshake",
-        #         "roof_mat_targrv", "roof_mat_wdshngl", "roof_mat_membran",
-        #         "roof_mat_clytile", "roof_mat_roll", "roof_mat_metal"]
-        # self.data = pd.concat((self.data, boink), axis=1)
+        self.dummify("Exter Qual", "ext_qual_")
+        self.dummify("Exter Cond", "ext_cond_")
+
+        self.dummify("Foundation", "foundation_")
+
+        self.raw_data.loc[:, "Mas Vnr Type"].fillna("None", inplace=True)
+        self.dummify("Mas Vnr Type", "mas_vnr_typ_")
+        self.raw_data.loc[:,"Mas Vnr Area"].fillna(0, inplace=True)
+        self.data.loc[:,"Mas Vnr Area"] = self.raw_data.loc[:, "Mas Vnr Area"]
+
+        #############################################################
+        # run: 024 Much more basement stuff                 #########
+        #############################################################
+        # Actually I think pandas dummify will handle nan's ok
+        # self.raw_data.loc[:,"Bsmt Cond"].fillna("TA", inplace=True)
+        self.dummify("Bsmt Cond", "bsmt_cond_")
+
+        self.dummify("Bsmt Exposure", "bsmt_expos_")
+
+        self.dummify("BsmtFin Type 1", "bsmt_fin_typ1_")
+
+        # seems like there is one nan value but can replace with 0
+        # probably the nan doesn't have a basement?
+        self.raw_data.loc[:, "BsmtFin SF 1"].fillna(0, inplace=True)
+        self.data.loc[:,"bsmtfin_sf_1"] = self.raw_data.loc[:, "BsmtFin SF 1"]
+
+        self.dummify("BsmtFin Type 2", "bsmt_fin_typ2_")
+
+        self.raw_data.loc[:,"BsmtFin SF 2"].fillna(0, inplace=True)
+        self.data.loc[:,"bsmtfin_sf_2"] = self.raw_data.loc[:, "BsmtFin SF 2"]
+
+        self.raw_data.loc[:,"Bsmt Unf SF"].fillna(0, inplace=True)
+        self.data.loc[:,"bsmtunf_sf"] = self.raw_data.loc[:, "Bsmt Unf SF"]
+
+        self.raw_data.loc[:,"Total Bsmt SF"].fillna(0, inplace=True)
+        self.data.loc[:,"Total Bsmt SF"] = self.raw_data.loc[:,"Total Bsmt SF"]
+
+        #############################################################
+        # run: 025 Bldg type, roof_matl                     #########
+        #############################################################
+        self.dummify("Bldg Type", "bldg_type_")
+        self.dummify("Roof Matl", "roof_matl_")
+
+        #############################################################
+        # run: 026 heating, central air, electrical onehots #########
+        #############################################################
+        self.dummify("Heating", "heating_")
+        self.dummify("Heating QC", "heat_qc_")
+        self.dummify("Central Air", "ac_")
+        self.dummify("Electrical", "electrical_")
+
+        #############################################################
+        # run: 027 low qual SF, bsmt baths, kitchens, functional ####
+        #############################################################
+        self.data.loc[:,"Low Qual Fin SF"] = self.raw_data.loc[:,"Low Qual Fin SF"]
+
+        self.raw_data.loc[:, "Bsmt Full Bath"].fillna(0, inplace=True)
+        self.data.loc[:,"Bsmt Full Bath"] = self.raw_data.loc[:, "Bsmt Full Bath"]
+
+        self.raw_data.loc[:, "Bsmt Half Bath"].fillna(0, inplace=True)
+        self.data.loc[:,"Bsmt Half Bath"] = self.raw_data.loc[:, "Bsmt Half Bath"]
+
+        self.data.loc[:, "Kitchen AbvGr"] = self.raw_data.loc[:, "Kitchen AbvGr"]
+
+        self.dummify("Functional", "funct_")
+
+        #############################################################
+        # run: 028 tons of garage stuff and also paved_drive_    ####
+        #############################################################
+        self.dummify("Garage Type", "garage_type_")
+
+        # for some reason there is a value that is 2207 which is like 200 years
+        # in the future. Fix all future values and replace with the mean
+        mean_yr = int(self.raw_data.loc[:, "Garage Yr Blt"].mean())
+
+        self.raw_data[self.raw_data.loc[:, "Garage Yr Blt"] > 2010] = mean_yr
+
+        # self.raw_data[self.raw_data.loc[:, "Garage Finish"] == 1978] = "Unf"
+        # replace nan's with the mean too, otherwise it will be very imbalanced?
+
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        #!! Doing something dumb? Revisit later !!!
+        #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        self.raw_data.loc[:, "Garage Yr Blt"].fillna(mean_yr, inplace=True)
+
+        self.data.loc[:,"garage_yr_blt"] = self.raw_data.loc[:, "Garage Yr Blt"]
+
+        # Garage finish has a column named (int) 1978 which doesn't seem to make sense
+        # self.raw_data[self.raw_data.loc[:, "Garage Finish"] == 1978] = "Unf"
+        self.dummify("Garage Finish", "garage_fin_")
+
+        # self.raw_data.loc[:, "Garage Area"].fillna(0, inplace=True)
+        #
+        # # has no garage
+        # self.dummy_data.loc[:,"has_garage"] = (self.raw_data["Garage Area"] < 1.0).astype(bool)
+        #
+        # # take the log of the garage area (TODO fuzz some to see if score improves
+        # # because there is a big class of 0ft^2, although might be fixed with
+        # # dummy column has_garage)
+        # self.raw_data.loc[:, "Garage Area"].apply(lambda x: np.log(x + 1.0))
+        # self.data.loc[:,"log_garage_area"] = self.raw_data.loc[:, "Garage Area"]
+
+        self.dummify("Garage Qual", "garage_qual_")
+
+        self.dummify("Garage Cond", "garage_cond_")
+
+        self.dummify("Paved Drive", "paved_drive_")
 
         #############################
         #############################
@@ -405,7 +468,7 @@ class GetData():
         #
 
 
-        # self.data.loc[:,"Gr Liv Area"] = self.raw_data.loc[:, "Gr Liv Area"]
+
 
         # self.data.loc[:, "bed_to_bath_ratio"] = self.data.loc[:, "Bedroom AbvGr"] / (self.data.loc[:, "total_baths"] * 1.0)
 
