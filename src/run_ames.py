@@ -24,6 +24,8 @@ def main():
     # split the data for train and test like normal
     # X_train1, X_train2, X_test, y_train1, y_train2, y_test = make_data_splits(X_train, y_train)
 
+    # import ipdb; ipdb.set_trace()
+
     RMSEs = []
 
     runs = 31
@@ -53,8 +55,8 @@ def main():
 
         # if the error is big then it blew up in the predictions
         # for some reason
-        if error > 1.0:
-            plot_residuals(y_preds, y_test, X_test, model)
+        # if error > 1.0:
+        #     plot_residuals(y_preds, y_test, X_test, model)
 
         print "RSMLE: {:2.4f}".format(error)
         RMSEs.append(error)
@@ -63,25 +65,25 @@ def main():
     mean = sum(RMSEs) / (len(RMSEs) * 1.0)
     print "Median RMSLE: {:2.4f} Mean RMSLE: {:2.4f}".format(boink, mean)
 
-    # with open("../data/rmsle_log.txt", "r") as in_file:
-    #     read_file = in_file.read()
-    #
-    # parent_list = simplejson.loads(read_file)
-    # # print "parent_list", parent_list
-    # parent_list.append(RMSEs)
-    # with open("../data/rmsle_log.txt", "w") as out_file:
-    #     out_file.write(simplejson.dumps(parent_list))
+    with open("../data/rmsle_log.txt", "r") as in_file:
+        read_file = in_file.read()
 
-    # #######################################
-    # ### Run Eval, do about 1 in 10 runs ###
-    # #######################################
-    #
-    # eval_preds = model.transform(X_eval)
-    # eval_error = np.sqrt(mean_squared_error(eval_preds, y_eval))
-    # print
-    # print "testing Eval Set: RMSLE: {:2.4f}".format(eval_error)
-    #
-    # print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
+    parent_list = simplejson.loads(read_file)
+    # print "parent_list", parent_list
+    parent_list.append(RMSEs)
+    with open("../data/rmsle_log.txt", "w") as out_file:
+        out_file.write(simplejson.dumps(parent_list))
+
+    #######################################
+    ### Run Eval, do about 1 in 10 runs ###
+    #######################################
+
+    eval_preds = model.transform(X_eval)
+    eval_error = np.sqrt(mean_squared_error(eval_preds, y_eval))
+    print
+    print "testing Eval Set: RMSLE: {:2.4f}".format(eval_error)
+
+    print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
 
 def print_coefs(model, X):
     '''

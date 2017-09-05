@@ -26,4 +26,5 @@
 25, 0.1397, "building type; roof material"
 26, 0.1347, "heating; cooling; electrical; mean was 0.1339; lowest single RMSE 0.1170"
 27, 0.1411, "low qual SF; bsmt baths; kitchens; functional seems a lot worse; ran it again got 0.1315/0.1335 so must just be bad luck?"
-27, 0.1369, "added a bunch of garage stuff"
+28, 0.1369, "added a bunch of garage stuff"
+29, 0.1404, "added porch enclosures with log transformations; variance seems wider since adding the basement flags"
