@@ -8,6 +8,6 @@ For extra data I simply went to the county website for Ames (Story county) and u
 
 The current result being a stacked ensemble that consists of 4 home price regressors for the first stage and then 1 gradient boosting regressor that takes the predicted prices from the lower models as the input and uses that to make the final prediction. 
 
-Current RMSLE is ~0.1350 of the mean home sale price so much work remains to be done.
+Current RMSLE is ~0.1203 so much work remains to be done.
 
 This project is currently a work in progress and documention will improve quite a bit.
