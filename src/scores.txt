@@ -1,4 +1,4 @@
-0, 0.1950, "super basic with LinearRegression adjusted for inflation using log price StandardScaler implemented also"
+0, 0.1950, "super basic with LinearRegression adjusted for inflation using log price StandardScaler implemented also; test set eval 0.1572"
 1, 0.1975, "repeat"
 2, 0.1945, "added square_feet feature"
 3, 0.1878, "added 'Overall Qual' feature"
@@ -28,3 +28,4 @@
 27, 0.1411, "low qual SF; bsmt baths; kitchens; functional seems a lot worse; ran it again got 0.1315/0.1335 so must just be bad luck?"
 28, 0.1369, "added a bunch of garage stuff"
 29, 0.1404, "added porch enclosures with log transformations; variance seems wider since adding the basement flags"
+30, 0.1468, "converted one-hot columns to int range numericals; LinearRegression fixed (but score sucks) test set eval 0.1203"

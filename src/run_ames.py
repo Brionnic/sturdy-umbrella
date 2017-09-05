@@ -12,7 +12,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.model_selection import cross_val_score
 
 def main():
-    ames_data = GetData(log_price=True, adjust_inflation=True)
+    # for models exept LinearRegression types
+    ames_data = GetData(log_price=True, adjust_inflation=True, one_hots=True)
+    # To allow LinearRegression to converge
+    # ames_data = GetData(log_price=True, adjust_inflation=True, one_hots=False)
     ames_data.fit()
     X, y = ames_data.transform()
 
@@ -65,25 +68,25 @@ def main():
     mean = sum(RMSEs) / (len(RMSEs) * 1.0)
     print "Median RMSLE: {:2.4f} Mean RMSLE: {:2.4f}".format(boink, mean)
 
-    with open("../data/rmsle_log.txt", "r") as in_file:
-        read_file = in_file.read()
-
-    parent_list = simplejson.loads(read_file)
-    # print "parent_list", parent_list
-    parent_list.append(RMSEs)
-    with open("../data/rmsle_log.txt", "w") as out_file:
-        out_file.write(simplejson.dumps(parent_list))
+    # with open("../data/rmsle_log.txt", "r") as in_file:
+    #     read_file = in_file.read()
+    #
+    # parent_list = simplejson.loads(read_file)
+    # # print "parent_list", parent_list
+    # parent_list.append(RMSEs)
+    # with open("../data/rmsle_log.txt", "w") as out_file:
+    #     out_file.write(simplejson.dumps(parent_list))
 
     #######################################
     ### Run Eval, do about 1 in 10 runs ###
     #######################################
 
-    eval_preds = model.transform(X_eval)
-    eval_error = np.sqrt(mean_squared_error(eval_preds, y_eval))
-    print
-    print "testing Eval Set: RMSLE: {:2.4f}".format(eval_error)
-
-    print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
+    # eval_preds = model.transform(X_eval)
+    # eval_error = np.sqrt(mean_squared_error(eval_preds, y_eval))
+    # print
+    # print "testing Eval Set: RMSLE: {:2.4f}".format(eval_error)
+    #
+    # print "RMSE: {}".format(np.sqrt(mean_squared_error(np.exp(y_preds), np.exp(y_test))))
 
 def print_coefs(model, X):
     '''

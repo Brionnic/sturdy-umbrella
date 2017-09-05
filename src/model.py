@@ -71,7 +71,7 @@ class AmesModel():
         # median ~0.1485, mean ~0.1549 with n_estimators = 10000
         # self.model_1 = RandomForestRegressor(n_estimators=100, n_jobs=-1)
 
-        self.model_1 = GradientBoostingRegressor(learning_rate=0.001, n_estimators=10000)
+        self.model_1 = GradientBoostingRegressor(learning_rate=0.01, n_estimators=1000)
 
     def fit(self, X, y):
         self.model_1.fit(X, y)
