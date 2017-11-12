@@ -13,7 +13,7 @@ from sklearn.model_selection import cross_val_score
 
 def main():
     # for models exept LinearRegression types
-    ames_data = GetData(log_price=True, adjust_inflation=True, one_hots=True)
+    ames_data = GetData(log_price=True, adjust_inflation=True, one_hots=True, disable_scaler=False)
     # To allow LinearRegression to converge
     # ames_data = GetData(log_price=True, adjust_inflation=True, one_hots=False)
     ames_data.fit()

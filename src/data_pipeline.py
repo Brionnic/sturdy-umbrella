@@ -154,8 +154,12 @@ class GetData():
     def dummify(self, column, col_text):
         '''
         take in categorical column and convert it to flagged dummy columns
+
+        Modify pd.get_dummies to drop_first in order to try to fix linear
+        regression explosions. This may be happening because of autocorellation
+        issue with having one essentially redundant column (k instead of k-1)
         '''
-        boink = pd.get_dummies(self.raw_data.loc[:,column], dummy_na=True).astype(bool)
+        boink = pd.get_dummies(self.raw_data.loc[:,column], drop_first=True, dummy_na=True).astype(bool)
 
 
         keys = boink.keys()
