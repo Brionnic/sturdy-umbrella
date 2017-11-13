@@ -13,7 +13,7 @@ from sklearn.model_selection import cross_val_score
 
 def main():
     # for models exept LinearRegression types
-    ames_data = GetData(log_price=True, adjust_inflation=True, one_hots=True, disable_scaler=False)
+    ames_data = GetData(log_price=True, adjust_inflation=False, one_hots=False, disable_scaler=True, include_PID=True)
     # To allow LinearRegression to converge
     # ames_data = GetData(log_price=True, adjust_inflation=True, one_hots=False)
     ames_data.fit()
@@ -58,8 +58,8 @@ def main():
 
         # if the error is big then it blew up in the predictions
         # for some reason
-        # if error > 1.0:
-        #     plot_residuals(y_preds, y_test, X_test, model)
+        if error > 0.10:
+            plot_residuals(y_preds, y_test, X_test, model, error)
 
         print "RSMLE: {:2.4f}".format(error)
         RMSEs.append(error)
@@ -98,7 +98,7 @@ def print_coefs(model, X):
     for idx, key in enumerate(keys):
         print "Feature: {:<20} Coef:{:4.4f}".format(key, coefs[idx])
 
-def plot_residuals(y_preds, y_actuals, X, model):
+def plot_residuals(y_preds, y_actuals, X, model, error):
     '''
     Try to troubleshoot why linear regression is exploding
     '''
@@ -108,23 +108,32 @@ def plot_residuals(y_preds, y_actuals, X, model):
     residuals = y_preds - y_actuals
 
     fig, ax = plt.subplots(figsize=(12,8))
-    ax.scatter(y_actuals, y_preds, alpha=0.4, s=100, color="blue")
-    ax.set_title("Difference in Predicted Price vs Actual Price (log)")
+    ax.scatter(y_actuals, residuals, alpha=0.4, s=100, color="blue")
+    ax.set_title("Difference in Predicted Price vs Actual Price (log)\n RMSLE:{:1.4f}".format(error))
     ax.set_xlabel("Actual Price")
     ax.set_ylabel("Error in Predicted Price")
     # plt.show()
 
-    print "                          len residuals:", len(residuals), "len preds:", len(y_preds), "len actuals:", len(y_actuals)
-    print "                          type y actuals:", type(y_actuals)
     _max = residuals.max()
-    print "                          max:", _max
+    print "                          max residual error:", _max
     print "                          argmax (index?):", residuals.argmax()
 
     index = list(residuals).index(_max)
-    print "                          index:", index
-    print "                          y_actuals:", y_actuals[index]
+    print "                          Max Pos error y_actual price:", np.exp(y_actuals[index])
 
-    print "                          X?:", X.iloc[index, :]
+    print "                          Max Pos error X-PID:", X.iloc[index, X.columns.get_loc("PID")]
+
+    _min = residuals.min()
+    print "                          min residual error:", _min
+    print "                          argmax (index?):", residuals.argmin()
+
+    index = list(residuals).index(_min)
+
+    print "                          Max Neg error y_actual price:", np.exp(y_actuals[index])
+
+    print "                          Max Neg Error X-PID:", X.iloc[index, X.columns.get_loc("PID")]
+
+    plt.show()
     # print "PID:", X.iloc[index, "PID"]
 
     # print "###########################"

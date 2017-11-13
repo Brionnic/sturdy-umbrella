@@ -16,7 +16,8 @@ class GetData():
                 adjust_inflation=False,
                 log_price=True,
                 one_hots=False,
-                disable_scaler=False):
+                disable_scaler=False,
+                include_PID=False):
         # load in data from csv, when exported from XLS used '~' as the
         # separator
         self.raw_data = pd.read_csv(housing_path, "~")
@@ -32,6 +33,9 @@ class GetData():
 
         # disable scaler during feature evaluation/troubleshooting
         self.disable_scaler = disable_scaler
+
+        # include PID as feature for debugging
+        self.include_PID = include_PID
 
         # self.dummy_data = None
 
@@ -57,14 +61,31 @@ class GetData():
             if self.adjust_inflation:
                 # look up how many months since each prop was sold and adjust
                 # the sale price to 2010 dollars
+
+                # debug print max price before and after inflation adjustment
+                print "     before    max Saleprice:", self.raw_data.loc[:,"SalePrice"].max()
+
                 self.raw_data.loc[:,"real_saleprice"] = self.raw_data.loc[:,"SalePrice"] * self.raw_data.loc[:,"cpi_adjustment"]
+
+                # debug print max price before and after inflation adjustment
+                print "     after    max Saleprice:", self.raw_data.loc[:,"SalePrice"].max()
+
                 self.raw_data.loc[:,"log_real_saleprice"] = np.log(self.raw_data.loc[:,"real_saleprice"])
+
+                print "   price after log:", np.exp(self.raw_data.loc[:,"log_real_saleprice"].max())
                 self.y = self.raw_data.loc[:,"log_real_saleprice"]
 
             # otherwise don't adjust log price for inflation
             else:
                 self.raw_data.loc[:,"log_saleprice"] = np.log(self.raw_data.loc[:,"SalePrice"])
                 self.y = self.raw_data.loc[:,"log_saleprice"]
+                print "max price: ", np.exp(self.y.max())
+                tprice = self.raw_data.loc[:,"SalePrice"].min()
+                tindex = self.raw_data[self.raw_data.loc[:, "SalePrice"] == 1978].loc[:, "PID"]
+                print "unadjusted min price:", tprice, "index", tindex
+                print "min price: ", np.exp(self.y.min())
+                print "PID == 1978:", sum(self.raw_data.loc[:, "TotRms AbvGrd"] == 1978)
+
 
         # otherwise don't use log price for Y
         else:
@@ -187,6 +208,10 @@ class GetData():
                    "Pool Area", "Fireplaces"]]
 
         self.raw_data.loc[:, "2nd Flr SF"].fillna(0, inplace=True)
+
+        # if include_PID debug is enabled:
+        if self.include_PID == True:
+            self.data.loc[:,"PID"] = self.raw_data.loc[:,"PID"]
 
         #############################################################
         # Run: 002 home_sf                                  #########
@@ -544,6 +569,11 @@ class GetData():
                    "Pool Area", "Fireplaces"]]
 
         self.raw_data.loc[:, "2nd Flr SF"].fillna(0, inplace=True)
+
+        # if include_PID debug is enabled:
+        if self.include_PID == True:
+            self.data.loc[:,"PID"] = self.raw_data.loc[:,"PID"]
+
 
         #############################################################
         # Run: 002 home_sf                                  #########
